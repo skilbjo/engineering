@@ -1,0 +1,20 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/engineering
+    docker:
+    - image: circleci/clojure:lein-2.8.1
+    environment:
+      - PATH: /usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/circleci/.local/bin
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run: sudo apt update; sudo apt install -qq python-pip; pip install awscli --upgrade --user
+      - run: deploy/bin/publish-image
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build

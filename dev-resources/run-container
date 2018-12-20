@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -eou pipefail
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+app_name=$(basename $(dirname $dir))
+
+docker run --rm -it \
+  --name="$(echo $app_name)" \
+  -e aws_access_key_id="$(cat ~/.aws/credentials | grep -A 2 skilbjo-robot | grep aws_access_key_id | awk '{print $3}')" \
+  -e aws_secret_access_key="$(cat ~/.aws/credentials | grep -A 2 skilbjo-robot | grep aws_secret_access_key | awk '{print $3}')" \
+  "$app_name":dev bash
