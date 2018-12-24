@@ -9,5 +9,5 @@ COPY deploy                      /usr/local/deploy
 COPY deploy/default/bashrc       /root/.bashrc
 COPY deploy/default/vimrc        /root/.vimrc
 
-RUN apk add --no-cache openjdk8 bash bash-completion coreutils vim zip unzip git ca-certificates \
+RUN apk add --no-cache openjdk8 bash bash-completion coreutils vim zip unzip git ca-certificates jq \
     && mkdir -p /root/.vim  && git clone https://github.com/Shougo/neobundle.vim ~/.vim/bundle && ~/.vim/bundle/bin/install.sh \
