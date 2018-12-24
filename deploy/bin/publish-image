@@ -1,19 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-app=$(basename $(pwd))
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+app="$(basename $(pwd))"
 registry='quay.io'
 image="${registry}/skilbjo/${app}"
 
-cat './deploy/default/Dockerfile' >Dockerfile
+setup(){
+  docker login -u "$QUAY_ROBOT_USERNAME" -p "$QUAY_ROBOT_PASSWORD" "$registry"
+}
 
-if [[ $CIRCLE_BRANCH == master ]]; then
-  tag='latest'
-else
-  tag="${CIRCLE_BRANCH}_${CIRCLE_BUILD_NUM}"
-fi
+publish(){
+  local tag="$1"
+  local tag_suffix=''
 
-docker login -u $QUAY_ROBOT_USERNAME -p $QUAY_ROBOT_PASSWORD $registry
-docker build --rm -t $image:$tag .
-docker tag $image:$tag $image:$CIRCLE_SHA1
-docker push $image
+  if [[ -f Dockerfile ]]; then rm Dockerfile; fi
+  if [[ -d target     ]]; then rm -rf target; fi
+
+  cat "${dir}/../deploy/default/${tag}.Dockerfile" >Dockerfile
+
+  if [[ $CIRCLE_BRANCH == master ]]; then
+    tag_suffix='latest'
+  else
+    tag_suffix="${CIRCLE_BRANCH}_${CIRCLE_BUILD_NUM}"
+  fi
+
+  tag="${tag}_${tag_suffix}"
+
+  docker build --rm -t "${image}:${tag}" .
+  docker tag "${image}:${tag}" "${image}:${CIRCLE_SHA1}"
+  docker push "$image"
+}
+
+setup \
+  && publish 'bash'     \
+  && publish 'bash-arm' \
+  && publish 'java'     \
+  && publish 'java-arm'
