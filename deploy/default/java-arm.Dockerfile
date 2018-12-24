@@ -12,4 +12,5 @@ COPY deploy                      /usr/local/deploy
 COPY deploy/default/bashrc       /root/.bashrc
 COPY deploy/default/vimrc        /root/.vimrc
 
-RUN ["qemu-arm-static","/sbin/apk","add","--no-cache","openjdk8"]
+RUN ["qemu-arm-static","/sbin/apk","add","--no-cache","openjdk8","bash","bash-completion","coreutils","vim","zip","unzip","git","ca-certificates"]
+RUN ["qemu-arm-static","/bin/mkdir","-p","/root/.vim"]
