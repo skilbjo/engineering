@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
 set -eou pipefail
 
-apk add -U postfix mutt
+_apk(){
+  apk add -U postfix mutt
+}
 
-git clone https://github.com/Shougo/neobundle.vim ~/.vim/bundle \
-  && ~/.vim/bundle/bin/install.sh
+_vim(){
+  git clone https://github.com/Shougo/neobundle.vim ~/.vim/bundle \
+    && ~/.vim/bundle/bin/install.sh
+}
 
-pip install --upgrade awscli
+_pip(){
+  pip install --upgrade awscli
+}
+
+_apk & 2>/dev/null; _vim & 2>/dev/null; _pip & 2>/dev/null;
+wait
