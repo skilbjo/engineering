@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../" && pwd )" && cd "$dir"
 app="$(basename $(pwd))"
 registry='quay.io'
 image="${registry}/skilbjo/${app}"
@@ -14,10 +14,7 @@ publish(){
   local tag="$1"
   local tag_suffix=''
 
-  if [[ -f Dockerfile ]]; then rm Dockerfile; fi
-  if [[ -d target     ]]; then rm -rf target; fi
-
-  cat "${dir}/../deploy/default/${tag}.Dockerfile" >Dockerfile
+  cat "${dir}/deploy/default/${tag}.Dockerfile" >Dockerfile
 
   if [[ $CIRCLE_BRANCH == master ]]; then
     tag_suffix='latest'
@@ -25,15 +22,18 @@ publish(){
     tag_suffix="${CIRCLE_BRANCH}_${CIRCLE_BUILD_NUM}"
   fi
 
-  tag="${tag}_${tag_suffix}"
+  tag="${tag}-${tag_suffix}"
 
   docker build --rm -t "${image}:${tag}" .
   docker tag "${image}:${tag}" "${image}:${CIRCLE_SHA1}"
   docker push "$image"
+
+  if [[ -f Dockerfile ]]; then rm Dockerfile; fi
 }
 
 setup \
   && publish 'bash'     \
   && publish 'bash-arm' \
   && publish 'java'     \
-  && publish 'java-arm'
+  && publish 'java-arm' \
+  && publish 'debian'

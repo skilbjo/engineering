@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 set -eou pipefail
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" && cd "${dir}/.."
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )" && cd "$dir"
 app="$(basename $(dirname $dir))"
 
 publish(){
   local tag="$1"
-  local tag_suffix=''
+  local tag_suffix='dev'
 
-  cat "${dir}/../deploy/default/${tag}.Dockerfile" >Dockerfile
+  cat "${dir}/deploy/default/${tag}.Dockerfile" >Dockerfile
 
-  tag_suffix='dev'
-  tag="${tag}_${tag_suffix}"
+  tag="${tag}-${tag_suffix}"
 
   docker build --rm -t "${app}:${tag}" .
   docker tag "${app}:${tag}" "$app"
