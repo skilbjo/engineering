@@ -6,6 +6,7 @@ ENV CMD="/usr/local/deploy/bin/run-job" \
 COPY deploy                      /usr/local/deploy
 COPY deploy/default/bashrc       /root/.bashrc
 COPY deploy/default/vimrc        /root/.vimrc
+COPY src                         /usr/local/src
 
 RUN apt-get update \
     && apt-get install -y bash bash-completion ca-certificates curl coreutils python python-pip python-six jq git postgresql-client postfix mutt vim \
