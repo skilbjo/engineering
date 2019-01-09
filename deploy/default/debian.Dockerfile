@@ -9,7 +9,8 @@ COPY deploy/default/vimrc        /root/.vimrc
 COPY src                         /usr/local/src
 
 RUN apt-get update \
-    && apt-get install -y bash bash-completion ca-certificates curl coreutils python python-pip python-six jq git postgresql-client postfix mutt vim \
+    && apt-get install -y ca-certificates bash bash-completion bc coreutils curl git jq postgresql-client unzip vim zip \
+    && apt-get install -y python-pip python python-six postfix mutt \
     && apt-get --reinstall install -y python-pyasn1 python-pyasn1-modules \
     && pip install pip==9.0.1 && pip install awscli \
     && mkdir -p /root/.vim  && git clone https://github.com/Shougo/neobundle.vim ~/.vim/bundle && ~/.vim/bundle/bin/install.sh \
