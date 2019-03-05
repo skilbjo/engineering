@@ -16,4 +16,4 @@ RUN apt-get update \
     && mkdir -p /root/.vim  && git clone https://github.com/Shougo/neobundle.vim ~/.vim/bundle && ~/.vim/bundle/bin/install.sh \
     && echo "[default]" >/root/.aws/config && echo "region = us-east-1" >>/root/.aws/config \
     && apt-get purge -y --auto-remove python3-pip \
-    && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/local/lib/python3.5/dist-packages/awscli/examples
