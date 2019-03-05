@@ -84,7 +84,7 @@ silent !stty -ixon
 autocmd VimLeave * silent !stty ixon
 
 autocmd BufWritePre * :call TrimWhiteSpace()
-autocmd BufWritePre * :retab()
+autocmd BufWritePre * :retab
 
 
 " == functions.vim ===============================================
