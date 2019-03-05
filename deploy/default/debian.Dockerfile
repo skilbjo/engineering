@@ -9,11 +9,10 @@ COPY deploy/default/vimrc        /root/.vimrc
 COPY src                         /usr/local/src
 
 RUN apt-get update \
-    && apt-get install -y ca-certificates bash bash-completion bc coreutils curl git jq postgresql-client unzip vim zip \
-    && apt-get install -y python-pip python python-six postfix mutt \
-    && apt-get --reinstall install -y python-pyasn1 python-pyasn1-modules \
-    && pip install pip==9.0.1 && pip install awscli \
+    && apt-get install -y ca-certificates bash bash-completion bc coreutils curl git htop jq postgresql-client tree unzip vim zip \
+    && apt-get install -y postfix mutt python3 python3-pip \
+    && pip3 install awscli && mkdir -p /root/.aws && chmod 700 /root/.aws \
     && mkdir -p /root/.vim  && git clone https://github.com/Shougo/neobundle.vim ~/.vim/bundle && ~/.vim/bundle/bin/install.sh \
-    && mkdir -p /root/.aws && echo "[default]" >/root/.aws/config && echo "region = us-east-1" >>/root/.aws/config && chmod 700 /root/.aws \
-    && apt-get purge -y --auto-remove python-pip \
+    && echo "[default]" >/root/.aws/config && echo "region = us-east-1" >>/root/.aws/config \
+    && apt-get purge -y --auto-remove python3-pip \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
