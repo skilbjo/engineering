@@ -11,7 +11,7 @@ _vim(){
 }
 
 _pip(){
-  pip install --upgrade awscli
+  pip3 install awscli
 }
 
 _apk & 2>/dev/null; _vim & 2>/dev/null; _pip & 2>/dev/null;

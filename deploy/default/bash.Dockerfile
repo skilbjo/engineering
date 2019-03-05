@@ -1,4 +1,4 @@
-FROM gliderlabs/alpine:3.6
+FROM gliderlabs/alpine:3.9
 
 ENV CMD="/usr/local/deploy/bin/run-job"
 
@@ -8,6 +8,6 @@ COPY deploy/default/vimrc        /root/.vimrc
 COPY src                         /usr/local/src
 
 RUN apk add -U ca-certificates bash bash-completion bc coreutils curl git htop jq postgresql-client tree unzip vim zip \
-    && apk add -U postfix mutt py-pip python-dev \
+    && apk add -U postfix mutt python3-dev \
     && mkdir -p /root/.vim  && git clone https://github.com/Shougo/neobundle.vim ~/.vim/bundle && ~/.vim/bundle/bin/install.sh \
-    && pip install --upgrade awscli && mkdir /root/.aws && chmod 700 /root/.aws
+    && pip3 install awscli && mkdir /root/.aws && chmod 700 /root/.aws

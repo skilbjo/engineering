@@ -1,4 +1,4 @@
-FROM resin/armhf-alpine:3.5
+FROM balenalib/generic-armv7ahf-alpine:3.9
 
 ENV CMD="/usr/local/deploy/bin/run-job" \
     JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk8" \

@@ -1,4 +1,4 @@
-FROM gliderlabs/alpine:3.6
+FROM gliderlabs/alpine:3.9
 
 ENV CMD="/usr/local/deploy/bin/run-job" \
     JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk8" \
