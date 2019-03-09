@@ -2,7 +2,7 @@
 set -eou pipefail
 
 _apk(){
-  apk add -U postfix mutt
+  echo 'Run [apk add -U postfix mutt] here, if cannot install a package via qemu'
 }
 
 _vim(){
