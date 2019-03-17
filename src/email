@@ -112,6 +112,7 @@ curl_email(){
   echo "$msg" >"${tmp_dir}/${report_name}.txt"
 
   curl \
+    --retry 3 \
     --insecure \
     --ssl-reqd \
     --url 'smtps://smtp.gmail.com:465' \
