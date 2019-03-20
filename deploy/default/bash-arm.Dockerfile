@@ -10,7 +10,7 @@ COPY deploy/default/bashrc       /root/.bashrc
 COPY deploy/default/vimrc        /root/.vimrc
 COPY src                         /usr/local/src
 
-RUN ["qemu-arm-static","/sbin/apk","add","-U","ca-certificates","cyrus-sasl-plain","bash","bash-completion","bc","coreutils","curl","git","htop","jq","postgresql-client","tree","unzip","vim","zip"]
+RUN ["qemu-arm-static","/sbin/apk","add","-U","bash","bash-completion","bc","ca-certificates","coreutils","curl","cyrus-sasl-plain","git","htop","jq","nss","postgresql-client","tree","unzip","vim","zip"]
 RUN ["qemu-arm-static","/sbin/apk","add","-U","mutt","python3-dev"]
 RUN ["qemu-arm-static","/bin/mkdir","-p","/root/.vim","/root/.aws"]
 RUN ["qemu-arm-static","/bin/chmod","700","/root/.aws"]
