@@ -10,7 +10,7 @@ COPY src                         /usr/local/src
 
 RUN apt update \
     && apt install -y bash bash-completion bc ca-certificates coreutils curl git htop jq postgresql-client tree unzip vim zip \
-    && apt install -y mutt python3-pip \
+    && apt install -y procps python3-pip \
     && apt install -y python3-six python3-pyasn1 \
     && pip3 install --upgrade awscli && mkdir -p /root/.aws && chmod 700 /root/.aws \
     && mkdir -p /root/.vim  && git clone https://github.com/Shougo/neobundle.vim ~/.vim/bundle && ~/.vim/bundle/bin/install.sh \
