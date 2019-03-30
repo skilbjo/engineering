@@ -117,7 +117,6 @@ curl_email(){
     --ssl-reqd \
     --url 'smtps://smtp.gmail.com:465' \
     --mail-from "$email" \
-    --mail-rcpt "$email" \
     --user "${email}:${email_pw}" \
     --upload-file "${tmp_dir}/${report_name}.txt"
   sleep 2
