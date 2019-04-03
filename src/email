@@ -8,10 +8,13 @@ html=''
 date_override=''
 body_override=''
 
+email="$_email"
+
 usage(){
   echo "Usage: email: ${0} [--report <file_path>] [--distro-list <'distro@list.com'>]" 1>&2
   echo "                   [--html] [--date-override <date>] [--body-override <body>]" 1>&2
   echo "       Do not use --html and body override in the same call.                 " 1>&2
+  echo '       Additionally, ensure $email and Semail_pw are set.                    ' 1>&2
   exit 1
 }
 while [[ $# -gt 0 ]]; do
@@ -26,6 +29,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 if [[ -z $report ]] || [[ -z $distro_list ]]; then usage; fi
+if [[ -z $email ]] || [[ -z $email_pw ]]; then usage; fi
 if [[ ! -z $html ]] && [[ ! -z $body_override ]]; then usage; fi
 
 mutt_setup(){
