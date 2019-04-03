@@ -171,6 +171,7 @@ curl_email(){
   curl \
     --retry 3 \
     --ssl-reqd \
+    --insecure \
     --url 'smtps://smtp.gmail.com:465' \
     --mail-from "$email" \
     --mail-rcpt "$distro_list" \
