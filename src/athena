@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eou pipefail
 
-get_state() {
+get_state(){
   local query_id="$1"
 
   local status="$(aws athena \
@@ -15,7 +15,7 @@ get_state() {
   echo "$state"
 }
 
-get_query () {
+get_query(){
   local query_id="$1"
 
   local results=$(aws athena \
@@ -31,36 +31,49 @@ get_query () {
     cat /tmp/athena/query
 }
 
-wait_til_finished() {
+wait_til_finished(){
   local query_id="$1"
   local status="in flux"
-  local number_of_tries=100
+  local sleep_sec=4
+  local number_of_tries=500 # 500 * 4 / 60 = 33 min timeout
+  local sql="$2"
+  local retry_failures=('HIVE_CURSOR_ERROR: Unable to execute HTTP request: Too many open files')
 
-  while [[ $status != done ]]; do
+  while [[ $status != done ]] && [[ $number_of_tries -ge 1 ]]; do
     local state="$(get_state "$query_id")"
 
     case "$state" in
-       FAILED | CANCELLED )
-        aws athena \
+      FAILED | CANCELLED )
+        local fail_reason="$(aws athena \
           --region us-east-1 \
           get-query-execution \
           --query-execution-id "$query_id" | \
-          jq '.QueryExecution.Status.StateChangeReason' >&2
+          jq -r '.QueryExecution.Status.StateChangeReason')"
 
-        echo 'Athena query failed.' >&2 && exit 1 ;;
+        echo "$fail_reason" >&2
+
+        if [[ ${retry_failures[@]} =~ $fail_reason ]]; then
+          echo 'Emphemeral Athena failure, retrying...' >&2
+          export -f query
+          exec bash -c "query \"$sql\""
+          break # exit the while loop
+        else
+          echo 'Athena query failed.' >&2 && exit 1
+        fi ;;
       SUCCEEDED )
         status="done"
         get_query "$query_id" ;;
       RUNNING | SUBMITTED )
-        sleep 3
-        ((number_of_tries = number_of_tries - 1)) ;;
-      * )
-        echo "Athena query state is unknown..: $state ... go tell John" >&2 && exit 1 ;;
+        sleep "$sleep_sec"
+        number_of_tries="$(echo "$number_of_tries - 1" | bc)" ;;
+      * ) echo "Athena query state is unknown..: $state ... go tell John" >&2 && exit 1 ;;
     esac
   done
+
+  if [[ $number_of_tries -eq 0 ]]; then echo "Athena query timeout reached; the query may still be running on athena." >&2 && exit 1; fi
 }
 
-query() {
+query(){
   local sql="$1"
   local sql_trimmed="$(sed -e 's/[[:space:]]*$//' <<<${sql})"
 
@@ -72,6 +85,6 @@ query() {
       --output text \
       --query-string "$sql_trimmed")"
 
-    wait_til_finished "$athena_query"
+    wait_til_finished "$athena_query" "$sql" # $sql passed in only for graceful retries
   fi
 }
