@@ -101,8 +101,8 @@ ${body}
 
 --NextPart
 Content-Type: text/csv;
+Content-Disposition: attachment; filename=\"${report}\"
 Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename=${report}
 ${attachment}
 --NextPart--")"
 
