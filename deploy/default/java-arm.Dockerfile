@@ -2,7 +2,7 @@ FROM balenalib/generic-armv7ahf-alpine:3.9
 
 ENV CMD="/usr/local/deploy/bin/run-job" \
     JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk8" \
-    JAVA_OPTS="-Duser.timezone=UTC -Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m " \
+    JAVA_OPTS="-Duser.timezone=UTC -Xms256m -Xmx1g -XX:MaxMetaspaceSize=128m" \
     PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/bin:/usr/lib/jvm/java-1.8-openjdk/bin" \
     QEMU_EXECVE=1
 
