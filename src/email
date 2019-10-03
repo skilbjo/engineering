@@ -241,6 +241,9 @@ email(){
   if [[ $(whoami) == 'root' ]]; then      # Docker
     curl_email "$distro_list" "$subject" "$body" "$attachment" "$html"
   elif [[ $(whoami) == 'sbx_'* ]]; then   # AWS Lambda
+    set +u; echo "in lambda, in email script, email var is $email , _email var is $_email"; set -u
+    email="${_email}"
+    export email="${_email:-$email}"         # needed, for some reason udocker can't use the "email" in the --env="email" call
     curl_email "$distro_list" "$subject" "$body" "$attachment" "$html"
   elif [[ $(whoami) == 'skilbjo' ]]; then # macOS
     curl_email "$distro_list" "$subject" "$body" "$attachment" "$html"
