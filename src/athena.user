@@ -54,7 +54,7 @@ wait_til_finished(){
 
         echo "$fail_reason" >&2
 
-        if [[ ${retry_failures[@]} =~ $fail_reason ]]; then
+        if [[ ${retry_failures[*]} =~ $fail_reason ]]; then
           echo 'Emphemeral Athena failure, retrying...' >&2
           export -f get_query get_state wait_til_finished query
           exec bash -c "query \"$sql\"" # replaces current process with execve call
