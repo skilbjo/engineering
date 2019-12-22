@@ -2,35 +2,57 @@
 set -eou pipefail
 
 tmp_dir="$(mkdir -p /tmp/email && echo '/tmp/email')"
-report=''
 distro_list=''
+subject=''
+body=''
+attachment=''
 html=''
-date_override=''
-body_override=''
-
-email="$_email"
 
 usage(){
-  echo "Usage: email: ${0} [--report <file_path>] [--distro-list <'distro@list.com'>]" 1>&2
-  echo "                   [--html] [--date-override <date>] [--body-override <body>]" 1>&2
-  echo "       Do not use --html and body override in the same call.                 " 1>&2
-  echo '       Additionally, ensure $email and Semail_pw are set.                    ' 1>&2
+  echo "Usage: email: ${0} [--distribution-list <'distro@list.com>] [--subject <text>]" 1>&2
+  echo "                   [--body <text>] [--attachment </path/to/file>] [--html]    " 1>&2
+  echo "       --distribution-list, --subject, and --body are required                " 1>&2
+  echo "       If using --html, --attachment must be present                          " 1>&2
+  echo '       Additionally, ensure $email and Semail_pw are set.                     ' 1>&2
   exit 1
 }
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -r|--report)        report="$2";        shift ;;
-    -l|--distro-list)   distro_list="$2";   shift ;;
-    -h|--html)          html='y' ;;
-    -d|--date-override) date_override="$2"; shift;;
-    -b|--body-override) body_override="$2"; shift;;
+    -d|--distro-list|--distribution-list) distro_list="$2"; shift ;;
+    -s|--subject)          subject="$2"; shift ;;
+    -b|--body)             body="$2"; shift ;;
+    -a|--attachment)       attachment="$2"; shift ;;
+    -h|--html)             html='y' ;;
     *) break ;;
   esac
   shift
 done
-if [[ -z $report ]] || [[ -z $distro_list ]]; then usage; fi
-if [[ -z $email ]] || [[ -z $email_pw ]]; then usage; fi
-if [[ ! -z $html ]] && [[ ! -z $body_override ]]; then usage; fi
+if [[ -z $distro_list ]] || [[ -z $subject ]] || [[ -z $body ]]; then usage; fi
+if [[ -n $html ]] && [[ -z $attachment ]]; then usage; fi
+
+email_cleanup(){
+  if [[ -d $tmp_dir ]]; then rm -rf "$tmp_dir"; fi
+}
+
+csv_to_html(){
+  local file="$1"
+  local file_name="$(basename "$file" | sed 's/\.[^.]*$//')"
+
+  echo '<table border="2" cellspacing="1" cellpadding="2">'         >"${tmp_dir}/${file_name}"
+  local header='true'
+  cat "$file" | while read line; do
+    if [[ $header == 'true' ]]; then
+      echo "<tr><th align='center'>${line//,/</th><th>}</th></tr>" >>"${tmp_dir}/${file_name}";
+      header='false';
+    else
+      echo "<tr><td align='center'>${line//,/</td><td>}</td></tr>" >>"${tmp_dir}/${file_name}";
+    fi
+  done
+  echo '</table>'                                                  >>"${tmp_dir}/${file_name}"
+
+  cat "${tmp_dir}/${file_name}"
+}
 
 mutt_setup(){
   if [[ $(whoami) == 'root' ]]; then
@@ -63,32 +85,36 @@ set certificate_file    = ~/.mutt/certificates"
 }
 
 create_mime_email(){
-  local report="$1"
-  local report_name="$(echo "$report" | sed 's/\.[^.]*$//')"
-  local distro_list="$2"
-  local html="$3"
-  local date_override="$4"
-  local body_override="$5"
+  local distro_list="$1"
+  local subject="$2"
+  local body="$3"
+  local attachment="$4"
+  local attachment_name="$(basename "$attachment" | sed 's/\.[^.]*$//')"
+  local html="$5"
 
-  local _date=''
-  local body=''
-  local attachment=''
-
-  if [[ $(whoami) == 'root' ]] || [[ $(whoami) == 'sbx_'* ]]; then
-    attachment="$(base64 -w 0 "$report")"
-  elif [[ $(whoami) == 'skilbjo' ]]; then
-    attachment="$(gbase64 -w 0 "$report")"
+  if [[ -n $attachment ]]; then
+    if [[ $(whoami) == 'root' ]] || [[ $(whoami) == 'sbx_'* ]]; then
+      encoded_attachment="$(base64 -w 0 "$attachment")"
+    elif [[ $(whoami) == 'skilbjo' ]]; then
+      encoded_attachment="$(gbase64 -w 0 "$attachment")"
+    fi
   fi
 
-  if [[ -z $date_override ]]; then _date="$(date +%F)"; else _date="$date_override"; fi
-  local subject="Iris report for $report_name for $_date"
-  if [[ -z $html ]]; then
-    body="Iris report for ${_date}. See attached file."
-  else
-    body="Iris report for ${_date}: "$(cat "$(echo "$report" | sed 's/\.[^.]*$//')".html | sed 's/\"//g' | tr -d "\n\r")""
+  if [[ -n $html ]]; then
+    csv_to_html "$attachment" >"${tmp_dir}/${attachment_name}.html"
+    body="$(echo "$body"): "$(cat "$(echo "${tmp_dir}/${attachment_name}.html" | sed 's/\.[^.]*$//')".html | sed 's/\"//g' | tr -d "\n\r")""
   fi
 
+  if [[ -z $attachment ]]; then
   local mime_email="$(echo "From: ${email}
+To: ${distro_list}
+Subject: ${subject}
+MIME-Version: 1.0
+Content-Type: text/html;
+
+${body}")"
+    else
+    local mime_email="$(echo "From: ${email}
 To: ${distro_list}
 Subject: ${subject}
 MIME-Version: 1.0
@@ -102,40 +128,30 @@ ${body}
 --NextPart
 Content-Type: text/csv;
 Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename=${report}
-${attachment}
+Content-Disposition: attachment; filename=\"${attachment}\"
+${encoded_attachment}
 --NextPart--")"
-
-  if [[ ! -z $body_override ]]; then
-    body="Iris report for ${_date}. ${body_override}."
-  local mime_email="$(echo "From: ${email}
-To: ${distro_list}
-Subject: ${subject}
-MIME-Version: 1.0
-Content-Type: text/html;
-
-${body}")"
   fi
 
   echo "$mime_email"
 }
 
 aws_ses(){
-  local report="$1"
-  local report_name="$(echo "$report" | sed 's/\.[^.]*$//')"
-  local distro_list="$2"
-  local html="$3"
-  local date_override="$4"
-  local body_override="$5"
-  local msg="$(create_mime_email "$report" "$distro_list" "$html" "$date_override" "$body_override")"
+  local distro_list="$1"
+  local subject="$2"
+  local body="$3"
+  local attachment="$4"
+  local html="$5"
 
-  jq -n --arg data "$msg" '{Data: $data}' >"${tmp_dir}/${report_name}.json"
+  local msg="$(create_mime_email "$distro_list" "$subject" "$body" "$attachment" "$html")"
+
+  jq -n --arg data "$msg" '{Data: $data}' >"${tmp_dir}/email.json"
 
   if [[ $(whoami) == 'root' ]]; then
     aws ses \
       send-raw-email \
       --region us-east-1 \
-      --raw-message "file://${tmp_dir}/${report_name}.json"
+      --raw-message "file://${tmp_dir}/email.json"
   elif [[ $(whoami) == 'sbx_'* ]]; then
     # Query rsults with lines longer than 8 fail on AWS Lambda
     # --raw-message "fileb://" results in
@@ -145,88 +161,95 @@ aws_ses(){
     aws ses \
       send-raw-email \
       --region us-east-1 \
-      --raw-message "file://${tmp_dir}/${report_name}.json"
+      --raw-message "file://${tmp_dir}/email.json"
   elif [[ $(whoami) == 'skilbjo' ]]; then
     aws ses \
       send-raw-email \
       --profile personal \
       --region us-east-1 \
-      --raw-message "file://${tmp_dir}/${report_name}.json"
+      --raw-message "file://${tmp_dir}/email.json"
   else
     >&2 echo "user is: $(whoami), add to setup fn"
   fi
 }
 
 curl_email(){
-  local report="$1"
-  local report_name="$(basename "$report" | sed 's/\.[^.]*$//')"
-  local distro_list="$2"
-  local html="$3"
-  local date_override="$4"
-  local body_override="$5"
-  local msg="$(create_mime_email "$report" "$distro_list" "$html" "$date_override" "$body_override")"
+  local distro_list="$1"
+  local subject="$2"
+  local body="$3"
+  local attachment="$4"
+  local html="$5"
 
-  echo "$msg" >"${tmp_dir}/${report_name}.txt"
+  local msg="$(create_mime_email "$distro_list" "$subject" "$body" "$attachment" "$html")"
+
+  echo "$msg" >"${tmp_dir}/email.txt"
 
   curl \
     --retry 3 \
-    --ssl-reqd \
     --insecure \
+    --ssl-reqd \
     --url 'smtps://smtp.gmail.com:465' \
     --mail-from "$email" \
     --mail-rcpt "$distro_list" \
     --user "${email}:${email_pw}" \
-    --upload-file "${tmp_dir}/${report_name}.txt"
+    --upload-file "${tmp_dir}/email.txt"
   sleep 2
 }
 
 mutt_email() {
-  local report="$1"
-  local report_name="$(basename "$report" | sed 's/\.[^.]*$//')"
-  local distro_list="$2"
-  local html="$3"
-  local date_override="$4"
+  local distro_list="$1"
+  local subject="$2"
+  local body="$3"
+  local attachment="$4"
+  local html="$5"
 
-  local body=''
-  local attachment=''
+  local msg="$(create_mime_email "$distro_list" "$subject" "$body" "$attachment" "$html")"
 
-  if [[ -z $date_override ]]; then _date="$(date +%F)"; else _date="$date_override"; fi
-  local subject="Iris report for $report_name for $_date"
-  if [[ -z $html ]]; then
-    body="Iris report for ${_date}. See attached file."
+  if [[ -n $html ]]; then
+    body="$(echo "$body"): "$(cat "$(echo "$attachment" | sed 's/\.[^.]*$//')".html | sed 's/\"//g' | tr -d "\n\r")""
+  fi
+
+  if [[ -n $attachment ]]; then
+    echo "$body" | \
+      mutt -e 'set content_type=text/html' \
+        -s "$subject" \
+        -- "$distro_list"
   else
-    body="Iris report for ${_date}: "$(cat "$(echo "$report" | sed 's/\.[^.]*$//')".html | sed 's/\"//g' | tr -d "\n\r")""
+    if [[ $(whoami) == 'root' ]] || [[ $(whoami) == 'sbx_'* ]]; then
+      encoded_attachment="$(base64 -w 0 "$attachment")"
+    elif [[ $(whoami) == 'skilbjo' ]]; then
+      encoded_attachment="$(gbase64 -w 0 "$attachment")"
+    fi
+
+    echo "$body" | \
+      mutt -e 'set content_type=text/html' \
+        -s "$subject" \
+        -a "$attachment" \
+        -- "$distro_list"
   fi
 
-  if [[ $(whoami) == 'root' ]] || [[ $(whoami) == 'sbx_'* ]]; then
-    attachment="$(base64 -w 0 "$report")"
-  elif [[ $(whoami) == 'skilbjo' ]]; then
-    attachment="$(gbase64 -w 0 "$report")"
-  fi
-
-  echo "$body" | \
-    mutt -e 'set content_type=text/html' \
-      -s "$subject" \
-      -a "$report" \
-      -- "$distro_list"
   sleep 2
 }
 
 email(){
-  local report="$1"
-  local distro_list="$2"
-  local html="$3"
-  local date_override="$4"
-  local body_override="$5"
+  local distro_list="$1"
+  local subject="$2"
+  local body="$3"
+  local attachment="$4"
+  local html="$5"
 
-  if [[ $(whoami) == 'root' ]]; then            # docker (k8s, odroid, pi)
-    curl_email "$report" "$distro_list" "$html" "$date_override" "$body_override"
-  elif [[ $(whoami) == 'sbx_'* ]]; then         # AWS Lambda
-    curl_email "$report" "$distro_list" "$html" "$date_override" "$body_override"
-  elif [[ $(whoami) == 'skilbjo' ]]; then       # mac OS
-    curl_email "$report" "$distro_list" "$html" "$date_override" "$body_override"
-    #mutt_email "$report" "$distro_list" "$html" "$date_override" "$body_override"
+  if [[ $(whoami) == 'root' ]]; then      # Docker
+    curl_email "$distro_list" "$subject" "$body" "$attachment" "$html"
+  elif [[ $(whoami) == 'sbx_'* ]]; then   # AWS Lambda
+    set +u; echo "in lambda, in email script, email var is $email , _email var is $_email"; set -u
+    email="${_email}"
+    export email="${_email:-$email}"         # needed, for some reason udocker can't use the "email" in the --env="email" call
+    curl_email "$distro_list" "$subject" "$body" "$attachment" "$html"
+  elif [[ $(whoami) == 'skilbjo' ]]; then # macOS
+    curl_email "$distro_list" "$subject" "$body" "$attachment" "$html"
   fi
+
+  email_cleanup
 }
 
-email "$report" "$distro_list" "$html" "$date_override" "$body_override"
+email "$distro_list" "$subject" "$body" "$attachment" "$html"

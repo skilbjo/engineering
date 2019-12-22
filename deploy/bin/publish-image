@@ -31,9 +31,10 @@ publish(){
   if [[ -f Dockerfile ]]; then rm Dockerfile; fi
 }
 
-setup \
-  && publish 'bash'     \
-  && publish 'bash-arm' \
-  && publish 'java'     \
-  && publish 'java-arm' \
-  && publish 'debian'
+setup
+
+publish 'bash'
+publish 'bash-arm'
+publish 'java'
+publish 'java-arm'
+publish 'debian'
