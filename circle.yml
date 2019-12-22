@@ -22,6 +22,7 @@ jobs:
     executor: bash
     steps:
       - checkout
+      - setup_remote_docker
       - shellcheck
       - install_aws_cli
       - run: deploy/bin/publish-image
