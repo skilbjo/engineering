@@ -18,12 +18,12 @@ get_state(){
 get_query(){
   local query_id="$1"
 
-  local results=$(aws athena \
+  local results="$(aws athena \
     --region us-east-1 \
     get-query-execution \
     --query-execution-id "$query_id" | \
     jq '.QueryExecution.ResultConfiguration.OutputLocation'
-  )
+  )"
 
   local cmd="aws s3 cp --region us-east-1 $results /tmp/athena/query >/dev/null"
 
@@ -37,7 +37,7 @@ wait_til_finished(){
   local sleep_sec=4
   local number_of_tries=500 # 500 * 4 / 60 = 33 min timeout
   local sql="$2"
-  local retry_failures=('HIVE_CURSOR_ERROR: Unable to execute HTTP request: Too many open files')
+  local retry_failures=('HIVE_CURSOR_ERROR: Unable to execute HTTP request: Too many open files','GENERIC_INTERNAL_ERROR: Unable to create class com.facebook.presto.execution.TaskInfo from JSON response')
 
   while [[ $status != done ]] && [[ $number_of_tries -ge 1 ]]; do
     local state="$(get_state "$query_id")"
@@ -62,7 +62,7 @@ wait_til_finished(){
       SUCCEEDED )
         status="done"
         get_query "$query_id" ;;
-      RUNNING | SUBMITTED )
+      RUNNING | SUBMITTED | QUEUED )
         sleep "$sleep_sec"
         number_of_tries="$(echo "$number_of_tries - 1" | bc)" ;;
       * ) echo "Athena query state is unknown..: $state ... go tell John" >&2 && exit 1 ;;

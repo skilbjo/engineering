@@ -39,7 +39,7 @@ wait_til_finished(){
   local sleep_sec=4
   local number_of_tries=500 # 500 * 4 / 60 = 33 min timeout
   local sql="$2"
-  local retry_failures=('HIVE_CURSOR_ERROR: Unable to execute HTTP request: Too many open files')
+  local retry_failures=('HIVE_CURSOR_ERROR: Unable to execute HTTP request: Too many open files','GENERIC_INTERNAL_ERROR: Unable to create class com.facebook.presto.execution.TaskInfo from JSON response')
 
   while [[ $status != done ]] && [[ $number_of_tries -ge 1 ]]; do
     local state="$(get_state "$query_id")"
@@ -48,6 +48,7 @@ wait_til_finished(){
       FAILED | CANCELLED )
         local fail_reason="$(aws athena \
           --region us-east-1 \
+          --profile skilbjo \
           get-query-execution \
           --query-execution-id "$query_id" | \
           jq -r '.QueryExecution.Status.StateChangeReason')"
@@ -64,7 +65,7 @@ wait_til_finished(){
       SUCCEEDED )
         status="done"
         get_query "$query_id" ;;
-      RUNNING | SUBMITTED )
+      RUNNING | SUBMITTED | QUEUED )
         sleep "$sleep_sec"
         number_of_tries="$(echo "$number_of_tries - 1" | bc)" ;;
       * ) echo "Athena query state is unknown..: $state ... go tell John" >&2 && exit 1 ;;
@@ -85,8 +86,7 @@ query(){
       start-query-execution \
       --result-configuration 'OutputLocation=s3://aws-athena-query-results-470340682667-us-east-1/,EncryptionConfiguration={EncryptionOption=SSE_S3}' \
       --output text \
-      --query-string "$sql_trimmed"
-    )"
+      --query-string "$sql_trimmed")"
 
     wait_til_finished "$athena_query" "$sql" # $sql passed in only for graceful retries
   fi
